@@ -249,6 +249,40 @@
             <li><a class="dropdown-item" href="#" onclick="baixarDados('txt')">Baixar em TXT</a></li>
         </ul>
     </div>
+    <!-- Adicione este código após os botões de download -->
+<div class="btn-group" style="min-width: 200px;">
+    <div class="btn-group">
+        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            Selecionar Sensores
+        </button>
+        <ul class="dropdown-menu">
+            <li class="dropdown-item">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="toggleAgua" checked>
+                    <label class="form-check-label" for="toggleAgua">
+                        Água
+                    </label>
+                </div>
+            </li>
+            <li class="dropdown-item">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="toggleEstufa" checked>
+                    <label class="form-check-label" for="toggleEstufa">
+                        Ar Estufa
+                    </label>
+                </div>
+            </li>
+            <li class="dropdown-item">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="toggleExterno" checked>
+                    <label class="form-check-label" for="toggleExterno">
+                        Ar Externo
+                    </label>
+                </div>
+            </li>
+        </ul>
+    </div>
+
 </div>
 
             
@@ -318,7 +352,42 @@
                     
             </div>
         </div>
-       
+        <li class="dropdown-item">
+            <div class="form-check">
+                <input class="form-check-input toggle-sensor" 
+                       type="checkbox" 
+                       id="toggleAgua" 
+                       data-index="0"
+                       checked>
+                <label class="form-check-label" for="toggleAgua">
+                    Água
+                </label>
+            </div>
+        </li>
+        <li class="dropdown-item">
+            <div class="form-check">
+                <input class="form-check-input toggle-sensor" 
+                       type="checkbox" 
+                       id="toggleEstufa" 
+                       data-index="1"
+                       checked>
+                <label class="form-check-label" for="toggleEstufa">
+                    Ar Estufa
+                </label>
+            </div>
+        </li>
+        <li class="dropdown-item">
+            <div class="form-check">
+                <input class="form-check-input toggle-sensor" 
+                       type="checkbox" 
+                       id="toggleExterno" 
+                       data-index="2"
+                       checked>
+                <label class="form-check-label" for="toggleExterno">
+                    Ar Externo
+                </label>
+            </div>
+        </li>   
 
     </div>
     </div>
@@ -371,6 +440,29 @@
         let temp1 = [], temp2 = [], temp3 = [];
 
         const ctx = document.getElementById('temperatureChart').getContext('2d');
+        // Controle de visibilidade das séries
+        document.getElementById('toggleAgua').addEventListener('change', function() {
+            chart.data.datasets[0].hidden = !this.checked;
+            chart.update();
+        });
+
+        document.getElementById('toggleEstufa').addEventListener('change', function() {
+            chart.data.datasets[1].hidden = !this.checked;
+            chart.update();
+        });
+
+        document.getElementById('toggleExterno').addEventListener('change', function() {
+            chart.data.datasets[2].hidden = !this.checked;
+            chart.update();
+        });
+        document.querySelectorAll('.toggle-sensor').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const datasetIndex = parseInt(this.dataset.index);
+                chart.data.datasets[datasetIndex].hidden = !this.checked;
+                chart.update();
+            });
+        });
+        // Modifique a configuração do gráfico para incluir a propriedade hidden
         const chart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -382,6 +474,7 @@
                         borderColor: 'blue',
                         backgroundColor: 'rgba(0, 0, 255, 0.1)',
                         fill: false,
+                        hidden: false
                     },
                     {
                         label: 'Temperatura Ar Estufa',
@@ -389,6 +482,7 @@
                         borderColor: 'green',
                         backgroundColor: 'rgba(0, 255, 0, 0.1)',
                         fill: false,
+                        hidden: false
                     },
                     {
                         label: 'Temperatura Ar Externo',
@@ -396,22 +490,35 @@
                         borderColor: 'orange',
                         backgroundColor: 'rgba(255, 165, 0, 0.1)',
                         fill: false,
+                        hidden: false
                     },
                 ],
             },
+            
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        title: { display: true, text: 'Temperatura (°C)' },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'Temperatura (°C)' },
+                        },
+                        x: { title: { display: true, text: 'Tempo' } },
                     },
-                    x: { title: { display: true, text: 'Tempo' } },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                filter: (legendItem, chartData) => {
+                                    // Mostra apenas legendas para datasets visíveis
+                                    return !chartData.datasets[legendItem.datasetIndex].hidden;
+                                }
+                            }
+                        }
+                    }
                 },
-            },
         });
-
+        
         function selecionarPeriodo(periodo) {
             periodoSelecionado = periodo;
             atualizarTemperaturas();
