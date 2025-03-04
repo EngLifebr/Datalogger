@@ -6,6 +6,7 @@
     <title>Monitor de Temperatura</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="englife.icon" type="image/icon">
+    <title>Ícone de Ajuda</title>
     <style>
         /* Estilos da Tela de Abertura */
         #splash-screen {
@@ -160,6 +161,47 @@
     100% { transform: scale(1); opacity: 1; }
 }
 
+/* Estilização do botão de ajuda */
+.help-icon {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .help-icon img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .help-icon:hover {
+            transform: scale(1.1);
+        }
+      
+    #monthPicker {
+        position: relative;
+    }
+    
+    #monthPicker:hover::after {
+        content: attr(title);
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 14px;
+        white-space: nowrap;
+        z-index: 1000;
+    }
+       
 
     </style>
 </head>
@@ -225,8 +267,25 @@
     
             <!-- Botões -->
 <div class="text-center mt-4">
-    <button class="btn btn-primary" style="min-width: 200px;" onclick="atualizarTemperaturas()">Atualizar Temperaturas</button>
-
+    
+    
+    <div class="btn-group" style="min-width: 200px;">
+        <input type="month" 
+               id="monthPicker" 
+               class="form-control" 
+               onchange="atualizarPorMes()"
+               min="2023-01"
+               max="2025-12"
+               data-bs-toggle="tooltip" 
+               data-bs-placement="top"
+               title="Selecionar mês específico">
+    </div>
+    
+    <script>
+        // Inicializar tooltips do Bootstrap
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    </script>
     <!-- Dropdown para seleção de período -->
     <div class="btn-group" style="min-width: 200px;">
         <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
@@ -285,8 +344,17 @@
     </div>
 
 </div>
-
-            
+        <div class="col-md-12 mt-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Análise de Sensibilidade</h5>
+                    <div id="regressionResults"></div>
+                    <div id="timeLagResults" class="mt-3"></div>
+                
+                </div>
+            </div>
+        </div>
+                    
 
         <div class="config-panel" id="configPanel">
                 <h4 class="text-center mb-4">Configuração de Limites</h4>
@@ -354,14 +422,19 @@
             </div>
         </div>
           
+        <a href="https://wa.me/+5519996058199" class="help-icon" target="_blank">
+            <img src="englife.png" alt="Ajuda">
+        </a>
 
-    </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Remova a linha anterior do ml-regression-multivariate-linear -->
+    <script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.2.0/math.min.js"></script>
     <!-- Scripts -->
     <script>
         // Controle da tela de abertura
@@ -402,7 +475,13 @@
         const temp2Element = document.getElementById('temp2');
         const temp3Element = document.getElementById('temp3');
         
-        
+        const dbRefs = {
+            '24h': database.ref('temperaturas'),
+            'semana': database.ref('temperaturas_semana'),
+            'mes': database.ref('temperaturas_mes'),
+            'ano': database.ref('temperaturas_ano'),
+            'personalizado': database.ref('temperaturas_ano')
+        };
         let periodoSelecionado = '24h'; // Padrão para as últimas 24 horas
         let temp1 = [], temp2 = [], temp3 = [];
 
@@ -487,11 +566,43 @@
                 },
         });
         
+       // Para períodos pré-definidos
         function selecionarPeriodo(periodo) {
             periodoSelecionado = periodo;
+            mesSelecionado = null;
+            anoSelecionado = null;
+            document.getElementById('monthPicker').value = '';
             atualizarTemperaturas();
         }
 
+        // Para seleção de mês personalizado
+        function atualizarPorMes() {
+            const selected = document.getElementById('monthPicker').value;
+            if (selected) {
+                [anoSelecionado, mesSelecionado] = selected.split('-').map(Number);
+                periodoSelecionado = 'personalizado';
+                atualizarTemperaturas();
+            }
+        }
+        async function atualizarAnalise() {
+    try {
+        // Mostrar loading
+        document.getElementById('regressionResults').innerHTML = `
+            <div class="text-center my-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p>Atualizando análise para período: ${periodoSelecionado}</p>
+            </div>
+        `;
+
+        await prepareData();
+        await runAnalysis();
+        
+    } catch (error) {
+        showError(error.message);
+    }
+}
         function processarDadosTemperatura(data) {
             chart.data.labels = [];
             chart.data.datasets.forEach(dataset => dataset.data = []);
@@ -533,36 +644,41 @@
         }
 
         function lerTemperaturas() {
-            let ref;
-            switch (periodoSelecionado) {
-                case '24h':
-                    ref = temperaturasRef;
-                    break;
-                case 'semana':
-                    ref = temperaturasSemanaRef;
-                    break;
-                case 'mes':
-                    ref = temperaturasMesRef;
-                    break;
-                default:
-                    ref = temperaturasRef;
-                    case 'ano': // Novo caso
-                    ref = temperaturasAnoRef;
-                    break;
-                
-            }
-
+            const ref = dbRefs[periodoSelecionado];
+            
             ref.once('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    processarDadosTemperatura(data);
+                    let filteredData = data;
+                    
+                    // Aplica filtro apenas para período personalizado
+                    if (periodoSelecionado === 'personalizado') {
+                        filteredData = filtrarPorMes(data);
+                    }
+
+                    processarDadosTemperatura(filteredData);
+                    prepareData().then(runAnalysis); // Atualiza análise automaticamente
                 } else {
-                    alert("Erro: Nenhum dado encontrado no Firebase.");
+                    alert("Nenhum dado encontrado para o período selecionado.");
                 }
-            }, (error) => {
-                console.error("Erro ao ler os dados de temperaturas:", error);
-                alert("Erro ao conectar com o Firebase!");
+            }).catch(error => {
+                console.error("Erro:", error);
+                alert("Erro ao carregar dados!");
             });
+        }
+
+        function filtrarPorMes(data) {
+            const filtered = {};
+            const mesFormatado = mesSelecionado.toString().padStart(2, '0');
+            
+            for (const key in data) {
+                const [datePart] = key.split('_');
+                const [year, month] = datePart.split('-');
+                if (year === anoSelecionado.toString() && month === mesFormatado) {
+                    filtered[key] = data[key];
+                }
+            }
+            return filtered;
         }
 
         function atualizarTemperaturas() {
@@ -705,9 +821,246 @@
         }
     });
 }
+let historicalData = [];
 
+async function prepareData() {
+    const ref = dbRefs[periodoSelecionado];
+    const snapshot = await ref.once('value');
+    const rawData = snapshot.val();
+    
+    historicalData = [];
+    
+    // Aplica filtro se for seleção personalizada
+    const filteredData = periodoSelecionado === 'personalizado' 
+        ? filtrarPorMes(rawData)
+        : rawData;
+
+    for (const timestamp in filteredData) {
+        const entry = filteredData[timestamp];
+        const [datePart, timePart] = timestamp.split('_');
+        const [year, month, day] = datePart.split('-');
+        const [hour, minute, second] = timePart.split('-');
+        
+        historicalData.push({
+            timestamp: new Date(year, month-1, day, hour, minute, second),
+            agua: parseFloat(entry.agua),
+            estufa: parseFloat(entry.estufa),
+            externa: parseFloat(entry.externa)
+        });
+    }
+    
+    historicalData.sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function getRefByPeriod() {
+    switch(periodoSelecionado) {
+        case '24h': return temperaturasRef;
+        case 'semana': return temperaturasSemanaRef;
+        case 'mes': return temperaturasMesRef;
+        case 'ano': return temperaturasAnoRef;
+        default: return temperaturasRef;
+    }
+}
+
+async function runAnalysis() {
+    try {
+        await prepareData(); // Já usa o período selecionado
+        
+        if (historicalData.length < 20) {
+            showError(`Mínimo de 20 registros para análise (${historicalData.length} encontrados)`);
+            return;
+        }
+
+        // 1. Calcular variações
+        const variations = calculateVariations(historicalData);
+
+        // 2. Realizar regressões
+        const coefAgua = olsRegression(variations.Var_Externa, variations.Var_Agua);
+        const coefInterna = olsRegression(variations.Var_Externa, variations.Var_Interna);
+
+        // 3. Calcular correlação cruzada
+        const lag = calculateCrossCorrelation(historicalData.map(d => d.externa), 
+                                            historicalData.map(d => d.agua));
+
+        // 4. Calcular intervalos
+        const intervaloMedio = calculateAverageInterval(historicalData);
+        
+        // 5. Calcular resultados finais
+        const variacaoMax = 1.5; // Substituir por valor do Firebase
+        const resultados = {
+            variacaoAgua: 1 / coefAgua,
+            variacaoInterna: 1 / coefInterna,
+            tempoReflexao: variacaoMax * coefAgua * intervaloMedio,
+            intervaloMedio,
+            unidade: 'minutos'
+        };
+
+        displayResults(resultados);
+
+    } catch (error) {
+        showError(error.message);
+    }
+}
+function calculateVariations(data) {
+    const variations = {
+        Var_Agua: [],
+        Var_Interna: [],
+        Var_Externa: []
+    };
+
+    for (let i = 1; i < data.length; i++) {
+        variations.Var_Agua.push(data[i].agua - data[i-1].agua);
+        variations.Var_Interna.push(data[i].estufa - data[i-1].estufa);
+        variations.Var_Externa.push(data[i].externa - data[i-1].externa);
+    }
+
+    return variations;
+}
+
+function olsRegression(X, Y) {
+    const sumX = X.reduce((a, b) => a + b, 0);
+    const sumY = Y.reduce((a, b) => a + b, 0);
+    const sumXY = X.reduce((a, _, i) => a + (X[i] * Y[i]), 0);
+    const sumX2 = X.reduce((a, b) => a + (b * b), 0);
+
+    const n = X.length;
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    
+    return slope;
+}
+
+function calculateCrossCorrelation(externa, agua, maxLag = 24) {
+    let bestLag = 0;
+    let maxCorr = -Infinity;
+
+    for (let lag = 0; lag <= maxLag; lag++) {
+        const shiftedExterna = externa.slice(lag);
+        const shiftedAgua = agua.slice(0, agua.length - lag);
+        
+        const corr = pearsonCorrelation(shiftedExterna, shiftedAgua);
+        
+        if (corr > maxCorr) {
+            maxCorr = corr;
+            bestLag = lag;
+        }
+    }
+
+    return bestLag;
+}
+
+function pearsonCorrelation(x, y) {
+    const n = x.length;
+    const meanX = x.reduce((a, b) => a + b, 0) / n;
+    const meanY = y.reduce((a, b) => a + b, 0) / n;
+    
+    let numerator = 0;
+    let denominatorX = 0;
+    let denominatorY = 0;
+
+    for (let i = 0; i < n; i++) {
+        numerator += (x[i] - meanX) * (y[i] - meanY);
+        denominatorX += Math.pow(x[i] - meanX, 2);
+        denominatorY += Math.pow(y[i] - meanY, 2);
+    }
+
+    return numerator / Math.sqrt(denominatorX * denominatorY);
+}
+
+function calculateAverageInterval(data) {
+    if(data.length < 2) return 0;
+    
+    // Filtra dados para considerar apenas o período selecionado
+    const filteredData = data.filter(entry => {
+        const age = Date.now() - entry.timestamp;
+        switch(periodoSelecionado) {
+            case '24h': return age <= 86400000;
+            case 'semana': return age <= 604800000;
+            case 'mes': return age <= 2592000000;
+            default: return true;
+        }
+    });
+
+    let total = 0;
+    for (let i = 1; i < filteredData.length; i++) {
+        total += filteredData[i].timestamp - filteredData[i-1].timestamp;
+    }
+    return (total / (filteredData.length - 1)) / (1000 * 60);
+}
+function displayResults(resultados) {
+    const html = `
+        <div class="alert alert-info">
+            <h5>Resultados da Análise:</h5>
+            <ul>
+                <li>Variação externa necessária para 1°C na água: ${resultados.variacaoAgua.toFixed(2)}°C</li>
+                <li>Variação externa necessária para 1°C na estufa: ${resultados.variacaoInterna.toFixed(2)}°C</li>
+                <li>Tempo de reflexão água: ${resultados.tempoReflexao.toFixed(2)} ${resultados.unidade}</li>
+                <li>Intervalo médio entre medições: ${resultados.intervaloMedio.toFixed(2)} ${resultados.unidade}</li>
+            </ul>
+        </div>
+    `;
+    
+    document.getElementById('regressionResults').innerHTML = html;
+}
+function displayResults(resultados) {
+    const periodos = {
+        '24h': 'Últimas 24 horas',
+        'semana': 'Última semana',
+        'mes': 'Último mês',
+        'ano': 'Histórico completo'
+    };
+
+    const html = `
+        <div class="alert alert-info">
+            <h5>Resultados da Análise (${periodos[periodoSelecionado]})</h5>
+            <ul>
+                <li>Período analisado: ${historicalData[0].timestamp.toLocaleDateString()} 
+                    a ${historicalData[historicalData.length-1].timestamp.toLocaleDateString()}</li>
+                <li>Total de amostras: ${historicalData.length}</li>
+                <li>Variação externa para 1°C na água: ${resultados.variacaoAgua.toFixed(2)}°C</li>
+                <li>Variação externa para 1°C na estufa: ${resultados.variacaoInterna.toFixed(2)}°C</li>
+                <li>Tempo de reflexão água: ${resultados.tempoReflexao.toFixed(2)} ${resultados.unidade}</li>
+            </ul>
+        </div>
+    `;
+    
+    document.getElementById('regressionResults').innerHTML = html;
+}
 
         
+async function runFullAnalysis() {
+    try {
+        // 1. Carregar dados e configurações
+        await prepareData();
+        const thresholds = await loadThresholds(); // Função existente modificada para retornar os limites
+        
+        // 2. Análise principal
+        const analysisResults = await runAnalysis(); // Função existente modificada
+        
+        // 3. Verificar dias problemáticos
+        const problematicDays = checkHistoricalConditions(historicalData, thresholds);
+        
+        // 4. Verificar previsão do tempo
+        const apiKey = 'sua_chave_api'; // Substituir pela chave real
+        const apiAvailable = await checkWeatherAPI(apiKey);
+        let forecastResults = '';
+        
+        if(apiAvailable) {
+            const forecast = await getWeatherForecast('São Paulo', apiKey);
+            forecastResults = analyzeForecast(forecast, thresholds);
+        }
+        
+        // 5. Exibir resultados combinados
+        displayFullResults(analysisResults, problematicDays, forecastResults);
+        
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+    document.getElementById('monthPicker').addEventListener('mouseover', function() {
+        this.setAttribute('title', 'Selecionar mês específico');
+    });
+
 
         // Adicione no final do window.onload
         window.onload = function() {
@@ -715,8 +1068,11 @@
             carregarConfig();
             lerSensores();
             lerTemperaturas();
+            prepareData();
+            setTimeout(runAnalysis, 5000); // Executar após 5 segundos
         };
                 setInterval(atualizarTemperaturas, 3000);
+                
     </script>
 </body>
 </html>
