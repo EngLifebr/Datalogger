@@ -837,7 +837,7 @@ async function runAnalysis() {
     try {
         await prepareData(); // Já usa o período selecionado
         
-        if (historicalData.length < 20) {
+        if (historicalData.length <10) {
             showError(`Mínimo de 20 registros para análise (${historicalData.length} encontrados)`);
             return;
         }
