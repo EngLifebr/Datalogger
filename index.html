@@ -182,26 +182,7 @@
         .help-icon:hover {
             transform: scale(1.1);
         }
-      
-    #monthPicker {
-        position: relative;
-    }
-    
-    #monthPicker:hover::after {
-        content: attr(title);
-        position: absolute;
-        top: -30px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #333;
-        color: #fff;
-        padding: 5px 10px;
-        border-radius: 4px;
-        font-size: 14px;
-        white-space: nowrap;
-        z-index: 1000;
-    }
-       
+
 
     </style>
 </head>
@@ -268,24 +249,14 @@
             <!-- Botões -->
 <div class="text-center mt-4">
     
-    
+    <label for="monthPicker" title="Selecionar mês específico">Escolha um mês:</label>
     <div class="btn-group" style="min-width: 200px;">
-        <input type="month" 
-               id="monthPicker" 
-               class="form-control" 
+        <input type="month" id="monthPicker" class="form-control" 
                onchange="atualizarPorMes()"
-               min="2023-01"
+               min="2023-01" 
                max="2025-12"
-               data-bs-toggle="tooltip" 
-               data-bs-placement="top"
                title="Selecionar mês específico">
     </div>
-    
-    <script>
-        // Inicializar tooltips do Bootstrap
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-    </script>
     <!-- Dropdown para seleção de período -->
     <div class="btn-group" style="min-width: 200px;">
         <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
@@ -1056,11 +1027,6 @@ async function runFullAnalysis() {
         showError(error.message);
     }
 }
-
-    document.getElementById('monthPicker').addEventListener('mouseover', function() {
-        this.setAttribute('title', 'Selecionar mês específico');
-    });
-
 
         // Adicione no final do window.onload
         window.onload = function() {
