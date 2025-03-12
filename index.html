@@ -876,11 +876,11 @@ async function runAnalysis() {
         const intervaloMedio = calculateAverageInterval(historicalData);
         
         // 5. Calcular resultados finais
-        const variacaoMax = 1.5; // Substituir por valor do Firebase
+        const variacaoMax = 1; // Substituir por valor do Firebase
         const resultados = {
             variacaoAgua: 1 / coefAgua,
             variacaoInterna: 1 / coefInterna,
-            tempoReflexao: variacaoMax * coefAgua * intervaloMedio,
+            tempoReflexao: variacaoMax*coefAgua * intervaloMedio*60,
             intervaloMedio,
             unidade: 'minutos'
         };
@@ -976,21 +976,21 @@ function calculateAverageInterval(data) {
     }
     return (total / (filteredData.length - 1)) / (1000 * 60);
 }
-function displayResults(resultados) {
-    const html = `
-        <div class="alert alert-info">
-            <h5>Resultados da Análise:</h5>
-            <ul>
-                <li>Variação externa necessária para 1°C na água: ${resultados.variacaoAgua.toFixed(2)}°C</li>
-                <li>Variação externa necessária para 1°C na estufa: ${resultados.variacaoInterna.toFixed(2)}°C</li>
-                <li>Tempo de reflexão água: ${resultados.tempoReflexao.toFixed(2)} ${resultados.unidade}</li>
-                <li>Intervalo médio entre medições: ${resultados.intervaloMedio.toFixed(2)} ${resultados.unidade}</li>
-            </ul>
-        </div>
-    `;
+
+function formatTime(minutes) {
+    if (minutes < 60) {
+        return `${minutes.toFixed(2)} minutos`;
+    }
     
-    document.getElementById('regressionResults').innerHTML = html;
+    const horas = Math.floor(minutes / 60);
+    const min = Math.round(minutes % 60);
+    
+    if (min === 0) {
+        return `${horas} horas`;
+    }
+    return `${horas} horas e ${min} minutos`;
 }
+
 function displayResults(resultados) {
     const periodos = {
         '24h': 'Últimas 24 horas',
@@ -1008,7 +1008,7 @@ function displayResults(resultados) {
                 <li>Total de amostras: ${historicalData.length}</li>
                 <li>Variação externa para 1°C na água: ${resultados.variacaoAgua.toFixed(2)}°C</li>
                 <li>Variação externa para 1°C na estufa: ${resultados.variacaoInterna.toFixed(2)}°C</li>
-                <li>Tempo de reflexão água: ${resultados.tempoReflexao.toFixed(2)} ${resultados.unidade}</li>
+                <li>Tempo de reflexão água: ${formatTime(resultados.tempoReflexao)}</li>
             </ul>
         </div>
     `;
@@ -1017,35 +1017,6 @@ function displayResults(resultados) {
 }
 
         
-async function runFullAnalysis() {
-    try {
-        // 1. Carregar dados e configurações
-        await prepareData();
-        const thresholds = await loadThresholds(); // Função existente modificada para retornar os limites
-        
-        // 2. Análise principal
-        const analysisResults = await runAnalysis(); // Função existente modificada
-        
-        // 3. Verificar dias problemáticos
-        const problematicDays = checkHistoricalConditions(historicalData, thresholds);
-        
-        // 4. Verificar previsão do tempo
-        const apiKey = 'sua_chave_api'; // Substituir pela chave real
-        const apiAvailable = await checkWeatherAPI(apiKey);
-        let forecastResults = '';
-        
-        if(apiAvailable) {
-            const forecast = await getWeatherForecast('São Paulo', apiKey);
-            forecastResults = analyzeForecast(forecast, thresholds);
-        }
-        
-        // 5. Exibir resultados combinados
-        displayFullResults(analysisResults, problematicDays, forecastResults);
-        
-    } catch (error) {
-        showError(error.message);
-    }
-}
 
         // Adicione no final do window.onload
         window.onload = function() {
