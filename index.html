@@ -165,9 +165,9 @@
 .help-icon {
             position: fixed;
             bottom: 10px;
-            right: 10px;
-            width: 20px;
-            height: 20px;
+            right: 20px;
+            width: 30px;
+            height: 30px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -182,6 +182,47 @@
         .help-icon:hover {
             transform: scale(1.1);
         }
+
+
+
+
+
+
+
+/* Progress Bar Improvements */
+.progress {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+    position: relative;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    transition: width 0.5s ease;
+    min-width: 40px; /* Garante visibilidade mesmo em % pequenas */
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    right: -2px;
+    height: 100%;
+    width: 2px;
+    background: rgba(255,255,255,0.3);
+}
+
+/* Badge Styling */
+.badge {
+    font-size: 0.9em;
+    padding: 0.5em 0.8em;
+    border-radius: 20px;
+    width: 100%;
+    margin: 2px 0;
+}
+
+
 
 
     </style>
@@ -234,7 +275,7 @@
                     </div>
                 </div>
             </div>
-    
+ 
             <!-- Gráfico -->
             <!-- Gráfico -->
             <div class="card">
@@ -281,10 +322,10 @@
         </ul>
     </div>
     <!-- Adicione este código após os botões de download -->
-<div class="btn-group" style="min-width: 200px;">
-    <div class="btn-group">
-        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-            Selecionar Sensores
+    <div class="btn-group" style="min-width: 200px;">
+    
+        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" >
+            Selecionar Sensores  
         </button>
         <ul class="dropdown-menu">
             <li class="dropdown-item">
@@ -313,6 +354,7 @@
             </li>
         </ul>
     </div>
+    <div class="btn-group">
 
 </div>
         <div class="col-md-12 mt-4">
@@ -328,7 +370,7 @@
                     
 
         <div class="config-panel" id="configPanel">
-                <h4 class="text-center mb-4">Configuração de Limites</h4>
+                <h4 class="text-center mb-4">Parâmetros de conforto Térmico</h4>
                 <div class="row">
                     <!-- Configuração para Água -->
                     <div class="col-md-4">
@@ -391,10 +433,12 @@
 
                     
             </div>
+           <!-- Adicione esta seção após os cards de temperatura -->
+
         </div>
           
         <a href="https://wa.me/+5519996058199" class="help-icon" target="_blank">
-            <img src="englife.png" alt="Ajuda">
+            <img src="ajuda.png" alt="Ajuda">
         </a>
 
     </div>
@@ -854,13 +898,28 @@ function getRefByPeriod() {
 
 async function runAnalysis() {
     try {
-        await prepareData(); // Já usa o período selecionado
-        
-        if (historicalData.length <10) {
-            showError(`Mínimo de 20 registros para análise (${historicalData.length} encontrados)`);
+        await prepareData();
+
+        if (historicalData.length < 10) {
+            showError(`Mínimo de 10 registros para análise (${historicalData.length} encontrados)`);
             return;
         }
 
+        // 1. Determinar período de análise
+        let tStart, tEnd;
+        if (periodoSelecionado === 'personalizado' && anoSelecionado && mesSelecionado) {
+            tStart = new Date(anoSelecionado, mesSelecionado - 1, 1);
+            tEnd = new Date(anoSelecionado, mesSelecionado, 0, 23, 59, 59, 999);
+        } else {
+            tEnd = new Date();
+            switch (periodoSelecionado) {
+                case '24h': tStart = new Date(tEnd - 86400000); break;
+                case 'semana': tStart = new Date(tEnd - 604800000); break;
+                case 'mes': tStart = new Date(tEnd - 2592000000); break;
+                case 'ano': tStart = new Date(tEnd - 31536000000); break;
+                default: tStart = new Date(tEnd - 86400000);
+            }
+        }
         // 1. Calcular variações
         const variations = calculateVariations(historicalData);
 
@@ -876,13 +935,55 @@ async function runAnalysis() {
         const intervaloMedio = calculateAverageInterval(historicalData);
         
         // 5. Calcular resultados finais
-        const variacaoMax = 1; // Substituir por valor do Firebase
+        const variacaoMax = 1.5; // Substituir por valor do Firebase
+        // 2. Filtrar dados do período
+        const filteredData = historicalData.filter(entry => 
+            entry.timestamp >= tStart && entry.timestamp <= tEnd
+        );
+
+        // 3. Cálculo do tempo fora dos limites
+        const limites = alertThresholds.agua;
+        let stats = {
+            above: 0,
+            below: 0,
+            total: tEnd - tStart
+        };
+
+        let prevTime = tStart;
+        let prevTemp = filteredData[0]?.agua;
+
+        filteredData.forEach(entry => {
+            const delta = entry.timestamp - prevTime;
+            
+            if (prevTemp > limites.max) stats.above += delta;
+            else if (prevTemp < limites.min) stats.below += delta;
+            
+            prevTime = entry.timestamp;
+            prevTemp = entry.agua;
+        });
+
+        // Tempo após último registro
+        const finalDelta = tEnd - prevTime;
+        if (prevTemp > limites.max) stats.above += finalDelta;
+        else if (prevTemp < limites.min) stats.below += finalDelta;
+
+        // 4. Calcular porcentagens
+        const percentuais = {
+            above: (stats.above / stats.total) * 100,
+            below: (stats.below / stats.total) * 100,
+            within: 100 - ((stats.above + stats.below) / stats.total) * 100
+        };
+
+        // 5. Montar objeto de resultados
         const resultados = {
+            period: { tStart, tEnd },
+            percentuais,
             variacaoAgua: 1 / coefAgua,
             variacaoInterna: 1 / coefInterna,
-            tempoReflexao: variacaoMax*coefAgua * intervaloMedio*60,
+            tempoReflexao: coefAgua * intervaloMedio*60,
             intervaloMedio,
             unidade: 'minutos'
+            // ... outros resultados existentes
         };
 
         displayResults(resultados);
@@ -976,7 +1077,6 @@ function calculateAverageInterval(data) {
     }
     return (total / (filteredData.length - 1)) / (1000 * 60);
 }
-
 function formatTime(minutes) {
     if (minutes < 60) {
         return `${minutes.toFixed(2)} minutos`;
@@ -992,31 +1092,74 @@ function formatTime(minutes) {
 }
 
 function displayResults(resultados) {
-    const periodos = {
-        '24h': 'Últimas 24 horas',
-        'semana': 'Última semana',
-        'mes': 'Último mês',
-        'ano': 'Histórico completo'
-    };
-
+    const { tStart, tEnd } = resultados.period;
+    const { above, below, within } = resultados.percentuais;
+    
+    const diasTotal = (tEnd - tStart) / (1000 * 3600 * 24);
+    
     const html = `
-        <div class="alert alert-info">
-            <h5>Resultados da Análise (${periodos[periodoSelecionado]})</h5>
-            <ul>
-                <li>Período analisado: ${historicalData[0].timestamp.toLocaleDateString()} 
-                    a ${historicalData[historicalData.length-1].timestamp.toLocaleDateString()}</li>
-                <li>Total de amostras: ${historicalData.length}</li>
+        
+            
+                
+                <!-- Metadados -->
+                <div class="mt-4 text-muted">
+                
+                    Período analisado: ${historicalData[0].timestamp.toLocaleDateString()} 
+                    a ${historicalData[historicalData.length-1].timestamp.toLocaleDateString()}
+                
+                <li>Tempo de coleta: ${historicalData.length} horas</li>  
+               
                 <li>Variação externa para 1°C na água: ${resultados.variacaoAgua.toFixed(2)}°C</li>
                 <li>Variação externa para 1°C na estufa: ${resultados.variacaoInterna.toFixed(2)}°C</li>
                 <li>Tempo de reflexão água: ${formatTime(resultados.tempoReflexao)}</li>
-            </ul>
-        </div>
+                <br><br>    
+                
+                <h5 class="card-title">Indicador de conforto térmico</h5>
+                <div style="height: 20px;"></div>
+                <!-- Barra de Progresso -->
+                <div class="progress mb-3" style="height: 30px;">
+                    <div class="progress-bar bg-success" 
+                         style="width: ${within}%" 
+                         title="Dentro dos limites">
+                        ${within.toFixed(1)}%
+                    </div>
+                    <div class="progress-bar bg-danger" 
+                         style="width: ${above}%" 
+                         title="Acima do máximo">
+                        ${above.toFixed(1)}%
+                    </div>
+                    <div class="progress-bar bg-warning" 
+                         style="width: ${below}%" 
+                         title="Abaixo do mínimo">
+                        ${below.toFixed(1)}%
+                    </div>
+                </div>
+
+                <!-- Legenda -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <span class="badge bg-success">Conforto térmico: ${within.toFixed(1)}%</span>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="badge bg-danger">Estresse por calor: ${above.toFixed(1)}%</span>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="badge bg-warning">Estresse por frio: ${below.toFixed(1)}%</span>
+                    </div>
+                </div>
+
+                </div>
+        
     `;
-    
+
     document.getElementById('regressionResults').innerHTML = html;
 }
 
         
+
+
+
+
 
         // Adicione no final do window.onload
         window.onload = function() {
