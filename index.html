@@ -121,9 +121,24 @@
             font-size: 16px;
         }
         #notification {
-            display: none;
-            margin-top: 20px;
-        }
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: none;
+    min-width: 300px;
+    text-align: center;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+#notification.show {
+    opacity: 1;
+}
         /* Ajuste no body para o gradiente principal */
     body {
         background: linear-gradient(
@@ -223,6 +238,91 @@
 }
 
 
+/* Estilos da Calibração */
+#calibracaoModal .alert {
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#calibracaoModal .input-group-text {
+    background: #e9ecef;
+    border-color: #dee2e6;
+}
+
+#calibracaoModal .progress {
+    height: 25px;
+    border-radius: 12px;
+}
+
+#calibracaoModal .progress-bar {
+    background-color: #ffc107;
+    transition: width 0.5s linear;
+}
+
+/* Estilos para o modal de configurações */
+#configModal .card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+#configModal .card:hover {
+    transform: translateY(-2px);
+}
+
+#configModal .card-header {
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+#configModal .form-label {
+    font-weight: 500;
+    color: #444;
+}
+
+#configModal input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+}
+
+/* Estilos dos horários */
+.horario-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    transition: background 0.2s;
+}
+
+.horario-item:last-child {
+    border-bottom: none;
+}
+
+.horario-item:hover {
+    background-color: #f8f9fa;
+}
+
+.horario-hora {
+    font-weight: 500;
+    color: #2c3e50;
+    min-width: 80px;
+}
+
+.horario-porcao {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.horario-peso {
+    background-color: #e3f2fd;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-weight: 500;
+    color: #0d6efd;
+}
+
+.card-body {
+    text-align: center;
+}
 
 
     </style>
@@ -288,78 +388,79 @@
             </div>
     
             <!-- Botões -->
+<!-- Botões -->
 <div class="text-center mt-4">
-    
-    <label for="monthPicker" title="Selecionar mês específico">Escolha um mês:</label>
-    <div class="btn-group" style="min-width: 200px;">
-        <input type="month" id="monthPicker" class="form-control" 
-               onchange="atualizarPorMes()"
-               min="2023-01" 
-               max="2025-12"
-               title="Selecionar mês específico">
-    </div>
-    <!-- Dropdown para seleção de período -->
-    <div class="btn-group" style="min-width: 200px;">
-        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-            Selecionar Período
-        </button>
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#" onclick="selecionarPeriodo('24h')">Últimas 24 horas</a></li>
-            <li><a class="dropdown-item" href="#" onclick="selecionarPeriodo('semana')">Última Semana</a></li>
-            <li><a class="dropdown-item" href="#" onclick="selecionarPeriodo('mes')">Último Mês</a></li>
-            <li><a class="dropdown-item" href="#" onclick="selecionarPeriodo('ano')">Registro completo</a></li>
-        </ul>
-    </div>
+    <div class="d-flex flex-wrap justify-content-center gap-2 gap-md-3">
+        <!-- Month Picker -->
+        <div class="btn-group flex-shrink-0" style="min-width: 200px;">
+            <label for="monthPicker" class="form-label mb-0 align-self-center me-1">Escolha um Mês:</label>
+            <input type="month" id="monthPicker" class="form-control" 
+                   onchange="atualizarPorMes()"
+                   min="2023-01" 
+                   max="2025-12"
+                   title="Selecionar mês específico">
+        </div>
 
-    <!-- Dropdown para opções de download -->
-    <div class="btn-group" style="min-width: 200px;">
-        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-            Baixar Dados
-        </button>
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#" onclick="baixarDados('xlsx')">Baixar em XLSX</a></li>
-            <li><a class="dropdown-item" href="#" onclick="baixarDados('txt')">Baixar em TXT</a></li>
-        </ul>
+        <!-- Dropdown Período -->
+        <div class="btn-group flex-shrink-0" style="min-width: 200px;">
+            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                Selecionar Período
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="selecionarPeriodo('24h')">Últimas 24 horas</a></li>
+                <li><a class="dropdown-item" href="#" onclick="selecionarPeriodo('semana')">Última Semana</a></li>
+                <li><a class="dropdown-item" href="#" onclick="selecionarPeriodo('mes')">Último Mês</a></li>
+                <li><a class="dropdown-item" href="#" onclick="selecionarPeriodo('ano')">Registro completo</a></li>
+            </ul>
+        </div>
+
+        <!-- Dropdown Download -->
+        <div class="btn-group flex-shrink-0" style="min-width: 200px;">
+            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                Baixar Dados
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="baixarDados('xlsx')">Baixar em XLSX</a></li>
+                <li><a class="dropdown-item" href="#" onclick="baixarDados('txt')">Baixar em TXT</a></li>
+            </ul>
+        </div>
+
+        <!-- Dropdown Sensores -->
+        <div class="btn-group flex-shrink-0" style="min-width: 200px;">
+            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                Selecionar Sensores
+            </button>
+            <ul class="dropdown-menu">
+                <li class="dropdown-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleAgua" checked>
+                        <label class="form-check-label" for="toggleAgua">Água</label>
+                    </div>
+                </li>
+                <li class="dropdown-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleEstufa" checked>
+                        <label class="form-check-label" for="toggleEstufa">Ar Estufa</label>
+                    </div>
+                </li>
+                <li class="dropdown-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="toggleExterno" checked>
+                        <label class="form-check-label" for="toggleExterno">Ar Externo</label>
+                    </div>
+                </li>
+            </ul>
+        </div>
     </div>
-    <!-- Adicione este código após os botões de download -->
-    <div class="btn-group" style="min-width: 200px;">
-    
-        <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" >
-            Selecionar Sensores  
-        </button>
-        <ul class="dropdown-menu">
-            <li class="dropdown-item">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="toggleAgua" checked>
-                    <label class="form-check-label" for="toggleAgua">
-                        Água
-                    </label>
-                </div>
-            </li>
-            <li class="dropdown-item">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="toggleEstufa" checked>
-                    <label class="form-check-label" for="toggleEstufa">
-                        Ar Estufa
-                    </label>
-                </div>
-            </li>
-            <li class="dropdown-item">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="toggleExterno" checked>
-                    <label class="form-check-label" for="toggleExterno">
-                        Ar Externo
-                    </label>
-                </div>
-            </li>
-        </ul>
-    </div>
-    <div class="btn-group">
+</div>
 
 </div>
         <div class="col-md-12 mt-4">
+            
             <div class="card">
+                
                 <div class="card-body">
+                    <div class="card-body text-center"></div>
                     <h5 class="card-title">Análise de Sensibilidade</h5>
                     <div id="regressionResults"></div>
                     <div id="timeLagResults" class="mt-3"></div>
@@ -430,8 +531,16 @@
                     <!-- Notificação e Alertas -->
                     <div id="notification" class="alert alert-success" role="alert"></div>
                     <div id="alertContainer" class="alert-container"></div>
-
-                    
+                    <div class="text-center mt-4">
+                        <div class="d-flex flex-md-row flex-column justify-content-center gap-md-3 gap-2">
+                            <button class="btn btn-secondary mb-md-0 mb-2" onclick="abrirConfiguracoes()">
+                                ⚙️ Configurações do Alimentador
+                            </button>
+                            <button class="btn btn-info" onclick="mostrarHorarios()">
+                                🕒 Ver Horários Agendados
+                            </button>
+                        </div>
+                    </div>
             </div>
            <!-- Adicione esta seção após os cards de temperatura -->
 
@@ -441,6 +550,173 @@
             <img src="ajuda.png" alt="Ajuda">
         </a>
 
+
+        
+        <!-- Modal de Configurações -->
+<div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="configModalLabel">Configurações do Alimentador</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-warning">
+                                <h5 class="card-title mb-0">Calibração</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <button class="btn btn-warning" onclick="iniciarCalibracao()">
+                                    🔧 Iniciar Calibração
+                                </button>
+                               
+                                <p class="text-muted mt-2">Calibre o sistema de dosagem</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="card-title mb-0">Configurações de Alimentação</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="configForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Horário Início</label>
+                                        <input type="time" class="form-control" id="horarioInicio" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Horário Fim</label>
+                                        <input type="time" class="form-control" id="horarioFim" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Peso Diário (gramas)</label>
+                                        <input type="number" class="form-control" id="pesoDiario" min="0" step="1" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Número de Porções</label>
+                                        <input type="number" class="form-control" id="porcoes" min="1" max="100" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Lançamentos por Dia</label>
+                                        <input type="number" class="form-control" id="lancamentos" min="1" max="100" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Intervalo (minutos)</label>
+                                        <input type="number" class="form-control" id="intervalo" min="1" max="120" required>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-success w-100">
+                                        💾 Salvar Configurações
+                                    </button>
+                                    
+                                    
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>    
+   
+<!-- Modal de Horários -->
+<div class="modal fade" id="horariosModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Horários Agendados</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="lista-horarios" class="list-group">
+                    <!-- Horários serão inseridos aqui -->
+                </div>
+                <div id="sem-horarios" class="text-muted text-center" style="display: none;">
+                    Nenhum horário agendado
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                <!-- Modal de Calibração -->
+        <div class="modal fade" id="calibracaoModal" tabindex="-1" aria-labelledby="calibracaoModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title" id="calibracaoModalLabel">🔧 Calibração do Sistema</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="etapa0">
+                            <h5 class="text-center mb-4">Instruções Iniciais</h5>
+                            <ol>
+                                <li>Posicione o recipiente VAZIO na balança</li>
+                                <li>Certifique-se que o sistema está estável</li>
+                                <li>Clique em "Iniciar Calibração" abaixo</li>
+                            </ol>
+                            <div class="text-center">
+                                <button class="btn btn-warning" onclick="iniciarEtapa(1)">Iniciar Calibração</button>
+                            </div>
+                        </div>
+
+                        <div id="etapa1" style="display: none;">
+                            <div class="alert alert-info">
+                                <strong>Etapa 1/3:</strong> Motor ligado por <span id="tempo1Value"></span> segundos
+                            </div>
+                            <div class="progress mb-3">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                    id="progressEtapa1" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div id="etapa2" style="display: none;">
+                            <div class="alert alert-primary">
+                                <strong>Etapa 2/3:</strong> Aguarde e Insira o peso medido após a primeira descarga
+                            </div>
+                            <div class="input-group mb-3">
+                                <input type="number" id="peso1Input" class="form-control" 
+                                    placeholder="Peso em gramas" step="1" min="0">
+                                <span class="input-group-text">gramas</span>
+                            </div>
+                            <button class="btn btn-primary w-100" onclick="avancarParaEtapa3()">Confirmar Peso</button>
+                        </div>
+
+                        <div id="etapa3" style="display: none;">
+                            <div class="alert alert-info">
+                                <strong>Etapa 3/3:</strong> Motor ligado por <span id="tempo2Value"></span> segundos
+                            </div>
+                            <div class="progress mb-3">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                    id="progressEtapa3" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div id="etapa4" style="display: none;">
+                            <div class="alert alert-success">
+                                <strong>Etapa Final:</strong> Aguarde e Insira o peso medido após a segunda descarga
+                            </div>
+                            <div class="input-group mb-3">
+                                <input type="number" id="peso2Input" class="form-control" 
+                                    placeholder="Peso em gramas" step="1" min="0">
+                                <span class="input-group-text">gramas</span>
+                            </div>
+                        <button class="btn btn-success w-100" onclick="finalizarCalibracao()">Finalizar Calibração</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+</div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
@@ -702,14 +978,26 @@
         }
 
         function exibirNotificacao(mensagem, tipo) {
-            const notification = document.getElementById('notification');
-            notification.textContent = mensagem;
-            notification.classList.remove('alert-success', 'alert-danger');
-            notification.classList.add(tipo === 'success' ? 'alert-success' : 'alert-danger');
-            notification.style.display = 'block';
+    const notification = document.getElementById('notification');
+    if (!mensagem) return; // Não exibe se não houver mensagem
 
-            setTimeout(() => notification.style.display = 'none', 5000);
-        }
+    notification.textContent = mensagem;
+    notification.classList.remove('alert-success', 'alert-danger', 'show');
+    
+    // Reset animation
+    void notification.offsetWidth;
+    
+    notification.classList.add(tipo === 'success' ? 'alert-success' : 'alert-danger');
+    notification.style.display = 'block';
+    notification.classList.add('show');
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 300);
+    }, 5000);
+}
 
         function baixarDados(tipo) {
             const header = 'Data\tHora\tTemperatura Água\tTemperatura Estufa\tTemperatura Externa';
@@ -1155,8 +1443,249 @@ function displayResults(resultados) {
     document.getElementById('regressionResults').innerHTML = html;
 }
 
-        
+// No início do seu script, após carregar o Bootstrap
+let modalCalibracao = null;
 
+document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar o modal
+    const modalElement = document.getElementById('calibracaoModal');
+    modalCalibracao = new bootstrap.Modal(modalElement);
+    
+    // Restante do seu código de inicialização...
+});        
+
+let tempoRestante = 0;
+let intervaloProgresso;
+
+function iniciarCalibracao() {
+    // Resetar todos os campos
+    document.getElementById('etapa0').style.display = 'block';
+    document.getElementById('etapa1').style.display = 'none';
+    document.getElementById('etapa2').style.display = 'none';
+    document.getElementById('etapa3').style.display = 'none';
+    document.getElementById('etapa4').style.display = 'none';
+    document.getElementById('peso1Input').value = '';
+    document.getElementById('peso2Input').value = '';
+    modalCalibracao.show();
+}
+
+async function iniciarEtapa(etapa) {
+    const db = firebase.database();
+    
+    if(etapa === 1) {
+        // Obter tempos do Firebase
+        const snapshot = await db.ref('calibracao').once('value');
+        const { tempo1, tempo2 } = snapshot.val();
+        
+        // Atualizar display
+        document.getElementById('tempo1Value').textContent = tempo1;
+        document.getElementById('tempo2Value').textContent = tempo2;
+        
+        // Iniciar primeira etapa
+        document.getElementById('etapa0').style.display = 'none';
+        document.getElementById('etapa1').style.display = 'block';
+        
+        // Ativar no Firebase
+        await db.ref('calibracao').update({
+            ativa: true,
+            etapa: 1
+        });
+        
+        iniciarContagemRegressiva(tempo1, 'progressEtapa1', () => {
+            document.getElementById('etapa1').style.display = 'none';
+            document.getElementById('etapa2').style.display = 'block';
+        });
+    }
+}
+
+function avancarParaEtapa3() {
+    const peso1 = document.getElementById('peso1Input').value;
+    if(!peso1 || peso1 < 1) {
+        alert("Por favor insira um peso válido!");
+        return;
+    }
+
+    firebase.database().ref('calibracao').update({
+        peso1: parseInt(peso1),
+        etapa: 2
+    }).then(() => {
+        document.getElementById('etapa2').style.display = 'none';
+        document.getElementById('etapa3').style.display = 'block';
+        
+        // Obter tempo2 do Firebase
+        firebase.database().ref('calibracao/tempo2').once('value').then(snapshot => {
+            const tempo2 = snapshot.val();
+            iniciarContagemRegressiva(tempo2, 'progressEtapa3', () => {
+                document.getElementById('etapa3').style.display = 'none';
+                document.getElementById('etapa4').style.display = 'block';
+            });
+        });
+    });
+}
+
+function finalizarCalibracao() {
+    const peso2 = document.getElementById('peso2Input').value;
+    if(!peso2 || peso2 < 1) {
+        alert("Por favor insira um peso válido!");
+        return;
+    }
+
+    // Desabilitar botão para evitar múltiplos cliques
+    const btn = document.querySelector('#etapa4 button');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Processando...';
+
+    // Primeiro atualiza o peso2
+    firebase.database().ref('calibracao').update({
+        peso2: parseInt(peso2)
+    }).then(() => {
+        // Delay de 5 segundos antes de desativar
+        setTimeout(() => {
+            firebase.database().ref('calibracao').update({
+                ativa: false,
+                etapa: 0
+            }).then(() => {
+                modalCalibracao.hide();
+                exibirNotificacao('Calibração concluída com sucesso!', 'success');
+                btn.disabled = false;
+                btn.textContent = 'Finalizar Calibração';
+            }).catch((error) => {
+                console.error("Erro ao finalizar calibração:", error);
+                exibirNotificacao('Erro ao finalizar calibração!', 'danger');
+                btn.disabled = false;
+                btn.textContent = 'Finalizar Calibração';
+            });
+        }, 5000); // 5000 ms = 5 segundos
+
+    }).catch((error) => {
+        console.error("Erro ao salvar peso2:", error);
+        exibirNotificacao('Erro ao salvar peso!', 'danger');
+        btn.disabled = false;
+        btn.textContent = 'Finalizar Calibração';
+    });
+}
+
+function iniciarContagemRegressiva(segundos, elementId, callback) {
+    let progresso = 0;
+    const elemento = document.getElementById(elementId);
+    
+    intervaloProgresso = setInterval(() => {
+        progresso += (100 / segundos);
+        elemento.style.width = `${progresso}%`;
+        
+        if(progresso >= 100) {
+            clearInterval(intervaloProgresso);
+            callback();
+        }
+    }, 1000);
+}
+
+
+
+
+
+
+
+
+// Variável global para configurações
+let configuracaoAtual = {};
+
+// Abrir modal de configurações
+function abrirConfiguracoes() {
+    const modal = new bootstrap.Modal(document.getElementById('configModal'));
+    
+    // Carregar configurações do Firebase
+    firebase.database().ref('config').once('value').then(snapshot => {
+        configuracaoAtual = snapshot.val();
+        preencherFormulario(configuracaoAtual);
+        modal.show();
+    }).catch(error => {
+        exibirNotificacao('Erro ao carregar configurações!', 'danger');
+        console.error(error);
+    });
+}
+
+// Preencher formulário com dados atuais
+function preencherFormulario(dados) {
+    document.getElementById('horarioInicio').value = dados.horarioInicio;
+    document.getElementById('horarioFim').value = dados.horarioFim;
+    document.getElementById('pesoDiario').value = dados.pesoDiario;
+    document.getElementById('porcoes').value = dados.porcoes;
+    document.getElementById('lancamentos').value = dados.lancamentos;
+    document.getElementById('intervalo').value = dados.intervalo;
+}
+
+// Salvar configurações
+document.getElementById('configForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const novoConfig = {
+        horarioInicio: document.getElementById('horarioInicio').value,
+        horarioFim: document.getElementById('horarioFim').value,
+        pesoDiario: parseInt(document.getElementById('pesoDiario').value),
+        porcoes: parseInt(document.getElementById('porcoes').value),
+        lancamentos: parseInt(document.getElementById('lancamentos').value),
+        intervalo: parseInt(document.getElementById('intervalo').value),
+        ativa: true // Adiciona esta linha
+    };
+
+    firebase.database().ref('config').update(novoConfig)
+        .then(() => {
+            exibirNotificacao('Configurações salvas e alimentador ativado!', 'success');
+            configuracaoAtual = novoConfig;
+            $('#configModal').modal('hide');
+        })
+        
+        
+});
+
+function mostrarHorarios() {
+    const modal = new bootstrap.Modal('#horariosModal');
+    
+    firebase.database().ref('agendamento').once('value').then(snapshot => {
+        const data = snapshot.val();
+        atualizarListaHorarios(data);
+        modal.show();
+    }).catch(error => {
+        exibirNotificacao('Erro ao carregar horários!', 'danger');
+        console.error(error);
+    });
+}
+
+function atualizarListaHorarios(data) {
+    const container = document.getElementById('lista-horarios');
+    const emptyMsg = document.getElementById('sem-horarios');
+    
+    container.innerHTML = '';
+    
+    if(data && data.porcoes && data.numPorcoes) {
+        const numPorcoes = data.numPorcoes;
+        const porcoes = data.porcoes.slice(0, numPorcoes);
+        
+        porcoes.forEach((p, i) => {
+            if(p && p.hora !== undefined && p.minuto !== undefined) {
+                const div = document.createElement('div');
+                div.className = 'horario-item';
+                
+                div.innerHTML = `
+                    <div class="d-flex align-items-center gap-3">
+                        <div>
+                            <span class="horario-hora">${p.hora.toString().padStart(2, '0')}:${p.minuto.toString().padStart(2, '0')}</span>
+                            <span class="horario-porcao">Porção ${i + 1}</span>
+                        </div>
+                        <span class="horario-peso">${p.peso}g</span>
+                    </div>
+                `;
+                
+                container.appendChild(div);
+            }
+        });
+        
+        emptyMsg.style.display = container.children.length === 0 ? 'block' : 'none';
+    } else {
+        emptyMsg.style.display = 'block';
+    }
+}
 
 
 
